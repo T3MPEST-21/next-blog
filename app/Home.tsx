@@ -7,9 +7,10 @@ import Footer from "@/components/footer";
 import { BlogTypes } from "../types/BlogTypes";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import BlogCard from "@/components/BlogCard";
 
 export default function Home() {
-    const router = userRouter();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [allBlog, setAllBlog] = useState<BlogTypes[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
@@ -19,18 +20,18 @@ export default function Home() {
 
     try {
       const response = await axios.post("/api/proxy", {
-        endpoint: "getallblogdata",
+        endpoint: "allblogs",
         payload: null,
         method: "POST",
         token: null,
       });
 
-      // console.log(response.data);
+      console.log(response.data.blogs);
       setLoading(false);
       const status = response.data?.status;
 
       if (status === 200) {
-        setAllBlog(response.data.allBlog);
+        setAllBlog(response.data.blogs);
       } else if (status === 201) {
         const backendErrors = response.data?.errors || [];
         if (Array.isArray(backendErrors)) {
@@ -69,12 +70,18 @@ export default function Home() {
   return (
     <div>
       <Hero />
-      <Card />
-      <Card />
-      <Card />
-      <Card />
-      <Card />
-      <Card />
+      <div>
+        <div className="max-w-screen-xl mx-auto p-5 sm:p-10 md:p-16">
+          <Card />
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10">
+
+            {allBlog.map((blog, index)=>(
+              <BlogCard key={index} blog={blog} />
+            ))}
+          </div>
+        </div>
+      </div>
+
       <Footer />
     </div>
   );

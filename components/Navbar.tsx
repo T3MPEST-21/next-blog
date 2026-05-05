@@ -67,15 +67,11 @@ export default function Navbar() {
             </button>
           </a>
 
-          <div>
-            <span className="hidden" id="util_data"></span>
-            <a
-              className=" py-1.5 px-3 m-1 text-center bg-gray-100 border border-gray-300 rounded-md text-black  hover:bg-gray-100 dark:text-gray-300 dark:bg-gray-700 hidden lg:inline-block "
-              href="https://tailwindflex.com/login"
-            >
-              About
-            </a>
-          </div>
+          <a href="/blog/create">
+            <button className=" py-1.5 px-3 m-1 text-center bg-violet-700 border rounded-md text-white  hover:bg-violet-500 hover:text-gray-100 dark:text-gray-200 dark:bg-violet-700 hidden lg:block">
+              New
+            </button>
+          </a>
 
           <a href="">
             <button className=" py-1.5 px-3 m-1 text-center bg-violet-700 border rounded-md text-white  hover:bg-violet-500 hover:text-gray-100 dark:text-gray-200 dark:bg-violet-700 hidden lg:block">
