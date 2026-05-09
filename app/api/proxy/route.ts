@@ -12,6 +12,8 @@ export async function POST(req: Request) {
       method = "POST",
     } = await req.json();
 
+    console.log("API Proxy called:", { endpoint, payload, method });
+
     if (!endpoint) {
       return NextResponse.json(
         { message: "An Error Occured: Missing endpoint" },
@@ -32,8 +34,12 @@ export async function POST(req: Request) {
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${finalToken}`,
     };
+
+    // Only add Authorization header for endpoints that require authentication
+    if (endpoint !== 'login' && endpoint !== 'register') {
+      headers.Authorization = `Bearer ${finalToken}`;
+    }
 
     const response = await axios({
       url,
@@ -43,7 +49,14 @@ export async function POST(req: Request) {
       validateStatus: () => true,
     });
 
-    return NextResponse.json(response.data, { status: response.status });
+    const nextResponse = NextResponse.json(response.data, { status: response.status });
+    
+    // Add CORS headers
+    nextResponse.headers.set('Access-Control-Allow-Origin', '*');
+    nextResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    nextResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    
+    return nextResponse;
   } catch (error) {
     console.error("API proxy error:", error);
 

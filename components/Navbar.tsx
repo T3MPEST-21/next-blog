@@ -1,15 +1,20 @@
 "use client";
 
+import { useAuth } from "@/contexts/AuthContext";
+import Link from "next/link";
+
 export default function Navbar() {
+  const { user, isAuthenticated, logout, isAdmin } = useAuth();
+
   return (
     <div>
       <nav className="relative px-4 py-2 flex justify-between items-center bg-white dark:bg-gray-800 border-b-2 dark:border-gray-600">
-        <a
+        <Link
+          href="/"
           className="text-2xl font-bold text-violet-600 dark:text-white"
-          href="#"
         >
           Blog
-        </a>
+        </Link>
 
         <div className="lg:hidden">
           <button
@@ -60,34 +65,53 @@ export default function Navbar() {
         </ul>
 
         <div className="hidden lg:flex">
+          {isAuthenticated ? (
+            <>
+              {user && (
+                <div className="flex items-center gap-2">
+                  <span className="py-1.5 px-3 m-1 text-center text-gray-700 dark:text-gray-200">
+                    Welcome, {user.name}
+                  </span>
+                  <span className={`py-1 px-2 text-xs rounded-full ${
+                    user.role === 2 
+                      ? 'bg-purple-100 text-purple-800 border-purple-200' 
+                      : 'bg-gray-100 text-gray-800 border-gray-200'
+                  } border`}>
+                    {user.role_name}
+                  </span>
+                </div>
+              )}
+              
+              {isAdmin() && (
+                <Link href="/blog/create">
+                  <button className="py-1.5 px-3 m-1 text-center bg-violet-700 border rounded-md text-white hover:bg-violet-500 hover:text-gray-100 dark:text-gray-200 dark:bg-violet-700 hidden lg:block">
+                    New Blog
+                  </button>
+                </Link>
+              )}
 
-          <a href="">
-            <button className=" py-1.5 px-3 m-1 text-center bg-violet-700 border rounded-md text-white  hover:bg-violet-500 hover:text-gray-100 dark:text-gray-200 dark:bg-violet-700 hidden lg:block">
-              Contact
-            </button>
-          </a>
+              <button
+                onClick={logout}
+                className="py-1.5 px-3 m-1 text-center bg-red-600 border rounded-md text-white hover:bg-red-700 hover:text-gray-100 dark:text-gray-200 dark:bg-red-600 hidden lg:block"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link href="/auth/login">
+                <button className="py-1.5 px-3 m-1 text-center bg-violet-700 border rounded-md text-white hover:bg-violet-500 hover:text-gray-100 dark:text-gray-200 dark:bg-violet-700 hidden lg:block">
+                  Login
+                </button>
+              </Link>
 
-          <a href="/blog/create">
-            <button className=" py-1.5 px-3 m-1 text-center bg-violet-700 border rounded-md text-white  hover:bg-violet-500 hover:text-gray-100 dark:text-gray-200 dark:bg-violet-700 hidden lg:block">
-              New
-            </button>
-          </a>
-
-          <a href="">
-            <button className=" py-1.5 px-3 m-1 text-center bg-violet-700 border rounded-md text-white  hover:bg-violet-500 hover:text-gray-100 dark:text-gray-200 dark:bg-violet-700 hidden lg:block">
-              Login
-            </button>
-          </a>
-
-          <div>
-            <span className="hidden" id="util_data"></span>
-            <a
-              className=" py-1.5 px-3 m-1 text-center bg-gray-100 border border-gray-300 rounded-md text-black  hover:bg-gray-100 dark:text-gray-300 dark:bg-gray-700 hidden lg:inline-block "
-              href="https://tailwindflex.com/login"
-            >
-              Sign In
-            </a>
-          </div>
+              <Link href="/auth/register">
+                <button className="py-1.5 px-3 m-1 text-center bg-green-600 border rounded-md text-white hover:bg-green-700 hover:text-gray-100 dark:text-gray-200 dark:bg-green-600 hidden lg:block">
+                  Register
+                </button>
+              </Link>
+            </>
+          )}
         </div>
       </nav>
 
@@ -96,12 +120,12 @@ export default function Navbar() {
         <div className="navbar-backdrop fixed inset-0 bg-gray-800 opacity-50"></div>
         <nav className="fixed bg-white dark:bg-gray-600 top-0 left-0 bottom-0 flex flex-col w-5/6 max-w-sm py-6 px-6 border-r overflow-y-auto">
           <div className="flex items-center mb-8">
-            <a
+            <Link
+              href="/"
               className="mr-auto text-2xl font-bold text-black text-violet-600 dark:text-gray-100"
-              href="https://tailwindflex.com/"
             >
-              TailwindFlex
-            </a>
+              Blog
+            </Link>
 
             <button className="navbar-close">
               <svg
@@ -147,10 +171,66 @@ export default function Navbar() {
 
           <div className="mt-auto">
             <div className="pt-6">
+              {isAuthenticated ? (
+                <>
+                  {user && (
+                    <div className="mb-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          Welcome, {user.name}
+                        </p>
+                        <span className={`py-1 px-2 text-xs rounded-full ${
+                          user.role === 2 
+                            ? 'bg-purple-100 text-purple-800 border-purple-200' 
+                            : 'bg-gray-100 text-gray-800 border-gray-200'
+                        } border`}>
+                          {user.role_name}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                        {user.email}
+                      </p>
+                    </div>
+                  )}
+
+                  {isAdmin() && (
+                    <Link
+                      href="/blog/create"
+                      className="block py-2 px-3 mb-3 text-center bg-violet-700 border rounded-md text-white hover:bg-violet-500 dark:text-gray-200 dark:bg-violet-700"
+                    >
+                      New Blog
+                    </Link>
+                  )}
+
+                  <button
+                    onClick={logout}
+                    className="w-full py-2 px-3 mb-3 text-center bg-red-600 border rounded-md text-white hover:bg-red-700 dark:text-gray-200 dark:bg-red-600"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/auth/login"
+                    className="block py-1.5 px-3 m-1 text-center bg-gray-100 border border-gray-300 rounded-md text-black hover:bg-gray-100 dark:text-gray-300 dark:bg-gray-700 px-4 py-3 mb-3 text-sm text-center font-semibold rounded-xl"
+                  >
+                    Login
+                  </Link>
+
+                  <Link
+                    href="/auth/register"
+                    className="block py-1.5 px-3 m-1 text-center bg-violet-700 border rounded-md text-white hover:bg-violet-500 hover:text-gray-100 dark:text-gray-200 dark:bg-violet-700 px-4 py-3 mb-2 text-xs text-center text-white font-semibold bg-violet-600 hover:bg-violet-700 rounded-xl"
+                  >
+                    Register
+                  </Link>
+                </>
+              )}
+
               <button
                 id="theme-toggle-2"
                 type="button"
-                className=" py-2.5 w-[97.6%] mb-3 rounded-xl flex justify-center align-middle py-1.5 px-3 m-1 text-center bg-gray-100 border border-gray-300 rounded-md text-black  hover:bg-gray-100 dark:text-gray-300 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="w-[97.6%] mb-3 r flex justify-center align-middle py-1.5 px-3 m-1 text-center bg-gray-100 border border-gray-300 rounded-md text-black hover:bg-gray-100 dark:text-gray-300 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 <svg
                   id="theme-toggle-dark-icon-2"
@@ -175,23 +255,9 @@ export default function Navbar() {
                   ></path>
                 </svg>
               </button>
-
-              <a
-                className="block py-1.5 px-3 m-1 text-center bg-gray-100 border border-gray-300 rounded-md text-black  hover:bg-gray-100 dark:text-gray-300 dark:bg-gray-700 px-4 py-3 mb-3 text-sm text-center font-semibold rounded-xl"
-                href="/login"
-              >
-                Sign in
-              </a>
-
-              <a
-                className="block py-1.5 px-3 m-1 text-center bg-violet-700 border rounded-md text-white  hover:bg-violet-500 hover:text-gray-100 dark:text-gray-200 dark:bg-violet-700 px-4 py-3 mb-2 text-xs text-center text-white font-semibold bg-violet-600 hover:bg-violet-700  rounded-xl"
-                href="https://tailwindflex.com/playground"
-              >
-                Tailwind Playground
-              </a>
             </div>
             <p className="my-4 text-xs text-center text-gray-400">
-              <span>TailwindFlex Copyright © 2023</span>
+              <span>Blog App © 2024</span>
             </p>
           </div>
         </nav>

@@ -1,13 +1,23 @@
 import React from "react";
-import { BlogTypes } from "@/types/BlogTypes";
 import { useRouter } from "next/navigation";
 
+interface Blog {
+  id: number;
+  title: string;
+  slug: string;
+  description: string;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+}
+
 interface BlogCardProps {
-  blog: BlogTypes;
+  blog: Blog;
 }
 
 export default function BlogCard({ blog }: BlogCardProps) {
   const router = useRouter();
+  
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -26,6 +36,13 @@ export default function BlogCard({ blog }: BlogCardProps) {
     router.push(`/blog/${blog.id}`);
   };
 
+  // Clean description - handle both JSON strings and plain text
+  const cleanDescription = typeof blog.description === 'string' 
+    ? blog.description.startsWith('"') 
+      ? JSON.parse(blog.description)
+      : blog.description
+    : blog.description;
+
   return (
     <div 
       className="rounded overflow-hidden shadow-lg flex flex-col cursor-pointer hover:shadow-xl transition-shadow"
@@ -36,7 +53,7 @@ export default function BlogCard({ blog }: BlogCardProps) {
         <a>
           <img
             className="w-full"
-            src="https://images.pexels.com/photos/61180/pexels-photo-61180.jpeg?auto=compress&amp;cs=tinysrgb&amp;dpr=1&amp;w=500-"
+            src="https://images.pexels.com/photos/61180/pexels-photo-61180.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500"
             alt={blog.title}
           />    
           <div className="hover:bg-transparent transition duration-300 absolute bottom-0 top-0 right-0 left-0 bg-gray-900 opacity-25"></div>
@@ -52,7 +69,12 @@ export default function BlogCard({ blog }: BlogCardProps) {
           {blog.title}
         </a>
         <p className="text-gray-500 text-sm">
-          {blog.description}
+          {typeof cleanDescription === 'string' 
+            ? cleanDescription.length > 100 
+              ? cleanDescription.substring(0, 100) + '...'
+              : cleanDescription
+            : cleanDescription
+          }
         </p>
       </div>
       <div className="px-6 py-3 flex flex-row items-center justify-between bg-gray-100">

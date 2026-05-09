@@ -3,34 +3,37 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-import RichTextEditor from "@/components/RichTextEditor";
+import TinyEditor from "@/components/TinyEditor";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function CreateBlog() {
-  const router = useRouter();
-
   const [title, setTitle] = useState("");
-  // Initialize description as an object for Tiptap JSON
-  const [description, setDescription] = useState<any>(null); 
+  const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  
+  const router = useRouter();
+  const { user } = useAuth();
 
-  const handleCreate = async () => {
-    // Validation: check if title exists and description isn't empty
-    if (!title || !description) {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!title.trim() || !description.trim()) {
       setError("Please fill in all fields");
       return;
     }
 
-    try {
-      setLoading(true);
-      setError("");
+    setLoading(true);
+    setError("");
 
+    try {
       const response = await axios.post("/api/proxy", {
         endpoint: "createblog",
         payload: {
-          title: title,
-          description: description, // This will now send the JSON object
-          created_by: 1,
+          title: title.trim(),
+          description: description.trim(),
+          created_by: user?.id || 1,
         },
         method: "POST",
       });
@@ -38,66 +41,81 @@ export default function CreateBlog() {
       if (response.data.status === 200) {
         router.push("/");
       } else {
-        setError("Failed to create blog");
+        setError(response.data.message || "Failed to create blog");
       }
     } catch (err) {
-      setError("Error creating blog");
+      setError("Error creating blog. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen">
-      <div className="max-w-4xl mx-auto p-5 sm:p-10 md:p-16">
-        <div className="rounded-lg shadow-md p-8 border-2 border-gray-300">
-          <h1 className="text-4xl font-bold mb-8">Create New Blog</h1>
-
-          {error && <p className="text-red-500 mb-4">{error}</p>}
-
-          <div className="mb-6">
-            <label className="block text-gray-700 font-semibold mb-2">
-              Title
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter blog title"
-              className="w-full p-3 border border-gray-300 rounded text-gray-700 focus:ring-2 focus:ring-green-500 outline-none"
-            />
-          </div>
-
-          <div className="mb-6">
-            <label className="block text-gray-700 font-semibold mb-2">
-              Content
-            </label>
-            {/* Swapping textarea for the RichTextEditor */}
-            <div className="bg-white rounded border border-gray-300">
-              <RichTextEditor 
-                value={description} 
-                onChange={(content: String) => setDescription(content)} 
-              />
+    <ProtectedRoute>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
+              <h1 className="text-2xl font-bold text-white">Create New Blog</h1>
             </div>
-          </div>
+            
+            <div className="p-6">
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+                  {error}
+                </div>
+              )}
 
-          <div className="flex gap-4">
-            <button
-              onClick={handleCreate}
-              disabled={loading}
-              className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 transition-colors"
-            >
-              {loading ? "Creating..." : "Create Blog"}
-            </button>
-            <button
-              onClick={() => router.push("/")}
-              className="px-6 py-2 text-indigo-600 border border-indigo-600 rounded hover:bg-indigo-50 transition-colors"
-            >
-              Cancel
-            </button>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label className="block text-gray-700 font-semibold mb-2">
+                    Title
+                  </label>
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    placeholder="Enter blog title"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-semibold mb-2">
+                    Content
+                  </label>
+                  <div className="border border-gray-300 rounded-lg overflow-hidden">
+                    <TinyEditor
+                      value={description}
+                      onChange={setDescription}
+                      placeholder="Write your blog content here..."
+                      height={400}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? "Creating..." : "Create Blog"}
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => router.push("/")}
+                    className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 }

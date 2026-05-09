@@ -3,16 +3,15 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/footer";
-import { BlogTypes } from "@/types/BlogTypes";
+import TinyEditor from "@/components/TinyEditor";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 export default function BlogDetail() {
   const params = useParams();
   const router = useRouter();
   const id = params.slug;
 
-  const [blog, setBlog] = useState<BlogTypes | null>(null);
+  const [blog, setBlog] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -35,7 +34,7 @@ export default function BlogDetail() {
         setEditTitle(response.data.blog.title);
         setEditDescription(response.data.blog.description);
       } else {
-        setError("Blog not found");
+        setError("Failed to load blog");
       }
     } catch (err) {
       setError("Error loading blog");
@@ -44,22 +43,22 @@ export default function BlogDetail() {
     }
   };
 
-  useEffect(() => {
-    if (id) {
-      fetchBlog();
-    }
-  }, [id]);
-
   const handleUpdate = async () => {
+    if (!editTitle.trim() || !editDescription.trim()) {
+      setError("Please fill in all fields");
+      return;
+    }
+
     try {
       setUpdating(true);
-      
+      setError("");
+
       const response = await axios.post("/api/proxy", {
         endpoint: "updateblog",
         payload: {
           id: id,
-          title: editTitle,
-          description: editDescription,
+          title: editTitle.trim(),
+          description: editDescription.trim(),
         },
         method: "POST",
       });
@@ -69,7 +68,7 @@ export default function BlogDetail() {
         setIsEditing(false);
         setError("");
       } else {
-        setError("Failed to update blog");
+        setError(response.data.message || "Failed to update blog");
       }
     } catch (err) {
       setError("Error updating blog");
@@ -100,130 +99,133 @@ export default function BlogDetail() {
     }
   };
 
-  if (loading) {
-    return (
-      <div>
-        <div className="max-w-3xl mx-auto p-5 sm:p-10 md:p-16">
-          <p>Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (id) {
+      fetchBlog();
+    }
+  }, [id]);
 
-  if (error || !blog) {
-    return (
-      <div>
-        <div className="max-w-3xl mx-auto p-5 sm:p-10 md:p-16">
-          <p className="text-red-500">{error}</p>
-        </div>
-      </div>
+  const processContent = (html: string) => {
+    // Process image tags to ensure they display properly
+    let processedHtml = html;
+    
+    // Fix image src attributes
+    processedHtml = processedHtml.replace(
+      /<img([^>]*?)src=["']([^"']*?)["']([^>]*?)>/gi,
+      (match, beforeSrc, src, afterSrc) => {
+        // Handle base64 images
+        if (src.startsWith('data:image/')) {
+          return `<img${beforeSrc}src="${src}"${afterSrc} style="max-width: 100%; height: auto;" loading="lazy">`;
+        }
+        
+        // Handle relative URLs
+        if (src.startsWith('/')) {
+          return `<img${beforeSrc}src="${src}"${afterSrc} style="max-width: 100%; height: auto;" loading="lazy">`;
+        }
+        
+        // Handle external URLs
+        if (src.startsWith('http')) {
+          return `<img${beforeSrc}src="${src}"${afterSrc} style="max-width: 100%; height: auto;" loading="lazy">`;
+        }
+        
+        // Default case - treat as relative
+        return `<img${beforeSrc}src="/${src}"${afterSrc} style="max-width: 100%; height: auto;" loading="lazy">`;
+      }
     );
-  }
+    
+    return processedHtml;
+  };
 
   return (
-    <div>
-      <div className=" min-h-screen">
-        <div className="max-w-4xl mx-auto p-5 sm:p-10 md:p-16">
-          <div className="border-2 border-gray-300 rounded-lg shadow-md p-8">
-            {error && <p className="text-red-500 mb-4">{error}</p>}
+    <ProtectedRoute>
+      <div>
+        <div className="max-w-3xl mx-auto p-5 sm:p-10 md:p-16">
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+              {error}
+            </div>
+          )}
 
-            {!isEditing ? (
-              <>
-                <img
-                  className="w-full h-96 object-cover rounded-lg mb-8"
-                  src="https://images.pexels.com/photos/61180/pexels-photo-61180.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500"
-                  alt={blog.title}
-                />
-
-                <h1 className="text-5xl font-bold mb-4 text-gray-200">{blog.title}</h1>
-
-                <div className="flex gap-6 text-gray-600 mb-8 pb-6 border-b">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-500">AUTHOR</p>
-                    <p className="text-lg font-semibold text-gray-300">{blog.created_by}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-500">PUBLISHED</p>
-                    <p className="text-lg font-semibold text-gray-300">
-                      {new Date(blog.created_at).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="prose prose-lg text-gray-300 leading-relaxed mb-8">
-                  {blog.description}
-                </div>
-
-                <div className="flex gap-4 mt-8 pt-8 border-t">
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={handleDelete}
-                    className="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-                  >
-                    Delete
-                  </button>
-                  <a
-                    href="/"
-                    className="px-6 py-2 text-indigo-600 border border-indigo-600 rounded hover:bg-indigo-50"
-                  >
-                    Back to blogs
-                  </a>
-                </div>
-              </>
-            ) : (
-              <>
-                <h2 className="text-3xl font-bold mb-6">Edit Blog</h2>
-
-                <div className="mb-6">
-                  <label className="block text-gray-700 font-semibold mb-2">Title</label>
-                  <input
-                    type="text"
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded text-gray-700"
+          {loading ? (
+            <p>Loading...</p>
+          ) : !blog ? (
+            <p className="text-red-500">Blog not found</p>
+          ) : (
+            <>
+              {!isEditing ? (
+                <>
+                  <h1 className="text-4xl font-bold mb-6">{blog.title}</h1>
+                  
+                  <div 
+                    className="prose prose-lg text-gray-100 leading-relaxed mb-8"
+                    dangerouslySetInnerHTML={{ __html: processContent(blog.description) }}
                   />
-                </div>
 
-                <div className="mb-6">
-                  <label className="block text-gray-700 font-semibold mb-2">Description</label>
-                  <textarea
-                    value={editDescription}
-                    onChange={(e) => setEditDescription(e.target.value)}
-                    rows={10}
-                    className="w-full p-3 border border-gray-300 rounded text-gray-700"
-                  />
-                </div>
+                  <div className="flex gap-4 mt-8 pt-8 border-t">
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={handleDelete}
+                      className="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                    >
+                      Delete
+                    </button>
+                    <a
+                      href="/"
+                      className="px-6 py-2 text-blue-600 border border-blue-600 rounded hover:bg-blue-50"
+                    >
+                      Back to blogs
+                    </a>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-3xl font-bold mb-6">Edit Blog</h2>
 
-                <div className="flex gap-4">
-                  <button
-                    onClick={handleUpdate}
-                    disabled={updating}
-                    className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-                  >
-                    {updating ? "Saving..." : "Save"}
-                  </button>
-                  <button
-                    onClick={() => setIsEditing(false)}
-                    className="px-6 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+                  <div className="mb-6">
+                    <label className="block text-gray-700 font-semibold mb-2">Title</label>
+                    <input
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div className="mb-6">
+                    <label className="block text-gray-700 font-semibold mb-2">Content</label>
+                    <TinyEditor
+                      value={editDescription}
+                      onChange={setEditDescription}
+                      height={400}
+                    />
+                  </div>
+
+                  <div className="flex gap-4">
+                    <button
+                      onClick={handleUpdate}
+                      disabled={updating}
+                      className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                    >
+                      {updating ? "Saving..." : "Save"}
+                    </button>
+                    <button
+                      onClick={() => setIsEditing(false)}
+                      className="px-6 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
+            </>
+          )}
         </div>
       </div>
-      <Footer />
-    </div>
+    </ProtectedRoute>
   );
 }
